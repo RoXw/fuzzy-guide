@@ -1,4 +1,3 @@
-from collections import namedtuple
 import heapq
 import time
 from enum import Enum
@@ -13,17 +12,19 @@ class DistanceMetric(Enum):
 
 class SearchNode:
     def __init__(
-        self, priority: int, board: Board,  moves: int, searchNode=None
+        self, board: Board, distance: str, moves: int, searchNode=None
     ) -> None:
         self.board = board
-        self.priority = priority
+        if distance.upper() == DistanceMetric.HAMMING:
+            dist = board.hamming()
+        else:
+            dist = board.manhattan()
+        self.priority = dist + moves
         self.parent = searchNode
         self.moves = moves
 
     def __lt__(self, other):
         return self.priority < other.priority
-
-# SearchNode = namedtuple("SearchNode", ["priority", "board", "moves", "parent"])
 
 
 class Solver:
@@ -43,10 +44,9 @@ class Solver:
         twinBoard = board.twin()
         exploredNodes = 0
         minPQ = []
-
-        heapq.heappush(minPQ, SearchNode(board.manhattan(), board, 0, None))
+        heapq.heappush(minPQ, SearchNode(board, distance, 0, None))
         minPQTwin = []
-        heapq.heappush(minPQTwin, SearchNode(twinBoard.manhattan(), twinBoard, 0, None))
+        heapq.heappush(minPQTwin, SearchNode(twinBoard, distance, 0, None))
 
         while True:
             currSearchNode = heapq.heappop(minPQ)
@@ -65,10 +65,7 @@ class Solver:
                     heapq.heappush(
                         minPQ,
                         SearchNode(
-                            neighbor.manhattan() + currSearchNode.moves + 1,
-                            neighbor,
-                            currSearchNode.moves + 1,
-                            currSearchNode,
+                            neighbor, distance, currSearchNode.moves + 1, currSearchNode
                         ),
                     )
 
@@ -79,8 +76,8 @@ class Solver:
                     heapq.heappush(
                         minPQTwin,
                         SearchNode(
-                            neighbor.manhattan() + currTwinSearchNode.moves + 1,
                             neighbor,
+                            distance,
                             currTwinSearchNode.moves + 1,
                             currTwinSearchNode,
                         ),
